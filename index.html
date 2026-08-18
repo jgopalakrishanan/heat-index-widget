@@ -50,6 +50,7 @@ margin-bottom:40px;
 font-size:100px;
 font-weight:bold;
 margin-bottom:40px;
+color:#38bdf8;
 }
  
 .updated{
@@ -85,7 +86,8 @@ background:#7e22ce;
  <div class="card">
  
 <div class="location">
-Cincinnati Division - Lebanon OH
+Cincinnati Division<br>
+Lebanon, OH
 </div>
  
 <div id="heatLevel" class="banner">
@@ -127,7 +129,7 @@ const pointResponse =
 await fetch(
 `https://api.weather.gov/points/${LAT},${LON}`
 );
- 
+`` 
 const pointData =
 await pointResponse.json();
  
@@ -152,15 +154,30 @@ heatValues.find(x => x.value !== null);
 const tempReading =
 tempValues.find(x => x.value !== null);
  
-if(!heatReading || !tempReading){
+if(!tempReading){
 return;
 }
  
-const heatIndex =
-cToF(heatReading.value);
- 
 const temperature =
 cToF(tempReading.value);
+ 
+document.getElementById("temp")
+.innerText = `${temperature}°F`;
+ 
+let heatIndex = null;
+ 
+if(!heatReading){
+ 
+document.getElementById("heat")
+.innerText = "N/A";
+ 
+}else{
+ 
+heatIndex = cToF(heatReading.value);
+ 
+document.getElementById("heat")
+.innerText = `${heatIndex}°F`;
+}
  
 document.getElementById("heat")
 .innerText = `${heatIndex}°F`;
