@@ -1,1 +1,146 @@
-
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Heat Index Dashboard</title>
+ 
+<style>
+body{
+margin:0;
+font-family:Arial, sans-serif;
+background:#0f172a;
+color:white;
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+ 
+.card{
+text-align:center;
+}
+ 
+.location{
+font-size:40px;
+margin-bottom:20px;
+}
+ 
+.heat{
+font-size:120px;
+font-weight:bold;
+color:#f59e0b;
+}
+ 
+.status{
+font-size:32px;
+margin-top:10px;
+}
+ 
+.updated{
+margin-top:15px;
+opacity:0.8;
+}
+</style>
+</head>
+ 
+<body>
+ 
+<div class="card">
+ 
+<div class="location">
+Green Bay Location
+</div>
+ 
+<div id="heat" class="heat">
+Loading...
+</div>
+ 
+<div id="status" class="status"></div>
+ 
+<div id="updated" class="updated"></div>
+ 
+</div>
+ 
+<script>
+ 
+// Replace with your location
+const LAT = 44.5133;
+const LON = -88.0133;
+ 
+async function loadWeather() {
+ 
+try {
+ 
+const pointResponse = await fetch(
+`https://api.weather.gov/points/${LAT},${LON}`
+);
+ 
+const pointData =
+await pointResponse.json();
+ 
+const gridUrl =
+pointData.properties.forecastGridData;
+ 
+const gridResponse =
+await fetch(gridUrl);
+ 
+const gridData =
+await gridResponse.json();
+ 
+const heatValues =
+gridData.properties.heatIndex.values;
+ 
+let entry =
+heatValues.find(v => v.value !== null);
+ 
+if (!entry) {
+document.getElementById("heat")
+.innerText = "N/A";
+return;
+}
+ 
+const heatF =
+Math.round(
+(entry.value * 9/5) + 32
+);
+ 
+document.getElementById("heat")
+.innerText = heatF + "°F";
+ 
+let category = "";
+ 
+if (heatF < 80)
+category = "Comfortable";
+else if (heatF < 90)
+category = "Caution";
+else if (heatF < 103)
+category = "Extreme Caution";
+else
+category = "Danger";
+ 
+document.getElementById("status")
+.innerText = category;
+ 
+document.getElementById("updated")
+.innerText =
+"Updated " +
+new Date().toLocaleString();
+ 
+}
+catch(err) {
+ 
+document.getElementById("heat")
+.innerText = "ERROR";
+ 
+console.error(err);
+}
+}
+ 
+loadWeather();
+ 
+setInterval(loadWeather, 300000);
+ 
+</script>
+ 
+</body>
+</html>
