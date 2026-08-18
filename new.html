@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Heat Index Dashboard</title>
+ 
+<style>
+ 
+body{
+margin:0;
+background:#0f172a;
+color:white;
+font-family:Arial,sans-serif;
+width:100vw;
+height:100vh;
+overflow:hidden;
+}
+ 
+.card{
+height:100%;
+width:100%;
+box-sizing:border-box;
+padding:15px;
+display:grid;
+grid-template-rows:
+auto
+auto
+1fr
+1fr
+1fr
+auto;
+gap:10px;
+text-align:center;
+}
+ 
+.location{
+font-size:clamp(20px,4vw,40px);
+font-weight:bold;
+}
+ 
+.banner{
+font-size:clamp(24px,5vw,48px);
+font-weight:bold;
+padding:12px;
+border-radius:10px;
+}
+ 
+.metric-label{
+font-size:clamp(14px,2vw,18px);
+text-transform:uppercase;
+opacity:0.85;
+}
+ 
+.heat{
+font-size:clamp(50px,8vw,100px);
+font-weight:bold;
+color:#facc15;
+}
+ 
+.temp{
+font-size:clamp(50px,8vw,100px);
+font-weight:bold;
+color:#38bdf8;
+}
+ 
+.humidity{
+font-size:clamp(50px,8vw,100px);
+font-weight:bold;
+color:#22c55e;
+}
+ 
+.updated{
+font-size:clamp(12px,1.5vw,18px);
+opacity:0.75;
+}
+ 
+.safe{
+background:#16a34a;
+}
+ 
+.caution{
+background:#facc15;
+color:black;
+}
+ 
+.extreme-caution{
+background:#f97316;
+}
+ 
+.danger{
+background:#dc2626;
+}
+ 
+.extreme-danger{
+background:#7e22ce;
+}
+ 
+</style>
+</head>
+ 
+<body>
+ 
+<div class="card">
+ 
+<div class="location">
+Cincinnati Division<br>
+Lebanon, OH
+</div>
+ 
+<div id="heatLevel" class="banner">
+Loading...
+</div>
+ 
+<div>
+<div class="metric-label">Heat Index</div>
+<div id="heat" class="heat">--</div>
+</div>
+ 
+<div>
+<div class="metric-label">Temperature</div>
+<div id="temp" class="temp">--</div>
+</div>
+ 
+<div>
+<div class="metric-label">Humidity</div>
+<div id="humidity" class="humidity">--</div>
+</div>
+ 
+<div id="updated" class="updated">
+Loading...
+</div>
+ 
+</div>
+ 
+<script>
+ 
+const LAT = 39.3933;
+const LON = -84.2285;
+ 
+function cToF(celsius){
+return Math.round((celsius * 9 / 5) + 32);
+}
+ 
+async function loadWeather(){
+ 
+try{
+ 
+const pointResponse = await fetch(
+`https://api.weather.gov/points/${LAT},${LON}`
+);
+ 
+const pointData = await pointResponse.json();
+ 
+const gridUrl =
+pointData.properties.forecastGridData;
+ 
+const gridResponse =
+await fetch(gridUrl);
+ 
+const gridData =
+await gridResponse.json();
+ 
+const heatValues =
+gridData.properties.heatIndex.values;
+ 
+const tempValues =
+gridData.properties.temperature.values;
+ 
+const humidityValues =
+gridData.properties.relativeHumidity.values;
+ 
+const heatReading =
+heatValues.find(v => v.value !== null);
+ 
+const tempReading =
+tempValues.find(v => v.value !== null);
+ 
+const humidityReading =
+humidityValues.find(v => v.value !== null);
+ 
+if(tempReading){
+ 
+const temperature =
+cToF(tempReading.value);
+ 
+document.getElementById("temp").innerText =
+temperature + "°F";
+}
+ 
+if(humidityReading){
+ 
+document.getElementById("humidity").innerText =
+Math.round(humidityReading.value) + "%";
+}
+ 
+let heatIndex = null;
+ 
+if(heatReading){
+ 
+heatIndex =
+cToF(heatReading.value);
+ 
+document.getElementById("heat").innerText =
+heatIndex + "°F";
+ 
+}else{
+ 
+document.getElementById("heat").innerText =
+"N/A";
+}
+ 
+const banner =
+document.getElementById("heatLevel");
+ 
+banner.className = "banner";
+ 
+if(heatIndex === null){
+ 
+banner.innerText =
+"NO HEAT INDEX";
+ 
+}
+else if(heatIndex < 80){
+ 
+banner.innerText = "SAFE";
+banner.classList.add("safe");
+ 
+}
+else if(heatIndex < 90){
+ 
+banner.innerText = "CAUTION";
+banner.classList.add("caution");
+ 
+}
+else if(heatIndex < 103){
+ 
+banner.innerText =
+"EXTREME CAUTION";
+ 
+banner.classList.add(
+"extreme-caution"
+);
+ 
+}
+else if(heatIndex < 125){
+ 
+banner.innerText =
+"DANGER";
+ 
+banner.classList.add(
+"danger"
+);
+ 
+}
+else{
+ 
+banner.innerText =
+"EXTREME DANGER";
+ 
+banner.classList.add(
+"extreme-danger"
+);
+}
+ 
+document.getElementById("updated").innerText =
+"Updated " +
+new Date().toLocaleTimeString(
+[],
+{
+hour: "numeric",
+minute: "2-digit"
+}
+);
+ 
+}
+catch(error){
+ 
+console.error(error);
+ 
+document.getElementById("heat").innerText =
+"ERROR";
+ 
+document.getElementById("temp").innerText =
+"ERROR";
+ 
+document.getElementById("humidity").innerText =
+"ERROR";
+ 
+document.getElementById("heatLevel").innerText =
+"DATA ERROR";
+}
+}
+ 
+loadWeather();
+ 
+setInterval(loadWeather, 300000);
+ 
+</script>
+ 
+</body>
+</html>
