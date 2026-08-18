@@ -5,12 +5,12 @@
 <title>Heat Index Dashboard</title>
  
 <style>
-body{
+  body{
 margin:0;
-font-family:Arial, sans-serif;
+font-family:Arial,sans-serif;
 background:#0f172a;
 color:white;
-height:100vh;
+min-height:100vh;
 display:flex;
 justify-content:center;
 align-items:center;
@@ -18,60 +18,113 @@ align-items:center;
  
 .card{
 text-align:center;
+width:90%;
+max-width:1000px;
 }
  
 .location{
-font-size:40px;
-margin-bottom:20px;
+font-size:42px;
+margin-bottom:25px;
+}
+ 
+.banner{
+font-size:42px;
+font-weight:bold;
+padding:20px;
+border-radius:12px;
+margin-bottom:40px;
+}
+ 
+.label{
+font-size:26px;
+margin-bottom:10px;
 }
  
 .heat{
 font-size:120px;
 font-weight:bold;
-color:#f59e0b;
+margin-bottom:40px;
 }
  
-.status{
-font-size:32px;
-margin-top:10px;
+.temp{
+font-size:100px;
+font-weight:bold;
+margin-bottom:40px;
 }
  
 .updated{
-margin-top:15px;
-opacity:0.8;
+margin-top:20px;
+font-size:18px;
+opacity:.8;
+}
+ 
+.safe{
+background:#16a34a;
+}
+ 
+.caution{
+background:#facc15;
+color:black;
+}
+ 
+.extreme-caution{
+background:#f97316;
+}
+ 
+.danger{
+background:#dc2626;
+}
+ 
+.extreme-danger{
+background:#7e22ce;
 }
 </style>
 </head>
  
 <body>
- 
-<div class="card">
+ <div class="card">
  
 <div class="location">
-Cincinnati Division - Lebanon 
+Cincinnati Division - Lebanon OH
 </div>
  
-<div id="heat" class="heat">
+<div id="heatLevel" class="banner">
 Loading...
 </div>
  
-<div id="status" class="status"></div>
+<div class="label">
+Current Heat Index
+</div>
+ 
+<div id="heat" class="heat">
+--
+</div>
+ 
+<div class="label">
+Current Temperature
+</div>
+ 
+<div id="temp" class="temp">
+--
+</div>
  
 <div id="updated" class="updated"></div>
  
 </div>
- 
 <script>
+  const LAT = 39.4353;
+  const LON = -84.2027;
  
-// Replace with your location
-const LAT = 39.3933203;
-const LON = -84.2285937;
+function cToF(celsius){
+return Math.round((celsius * 9/5) + 32);
+}
  
-async function loadWeather() {
+async function loadWeather(){
  
-try {
+try{
  
-const pointResponse = await fetch(
+const pointResponse =
+await fetch(
 `https://api.weather.gov/points/${LAT},${LON}`
 );
  
@@ -90,57 +143,87 @@ await gridResponse.json();
 const heatValues =
 gridData.properties.heatIndex.values;
  
-let entry =
-heatValues.find(v => v.value !== null);
+const tempValues =
+gridData.properties.temperature.values;
  
-if (!entry) {
-document.getElementById("heat")
-.innerText = "N/A";
+const heatReading =
+heatValues.find(x => x.value !== null);
+ 
+const tempReading =
+tempValues.find(x => x.value !== null);
+ 
+if(!heatReading || !tempReading){
 return;
 }
  
-const heatF =
-Math.round(
-(entry.value * 9/5) + 32
-);
+const heatIndex =
+cToF(heatReading.value);
+ 
+const temperature =
+cToF(tempReading.value);
  
 document.getElementById("heat")
-.innerText = heatF + "°F";
+.innerText = `${heatIndex}°F`;
  
-let category = "";
+document.getElementById("temp")
+.innerText = `${temperature}°F`;
  
-if (heatF < 80)
-category = "Comfortable";
-else if (heatF < 90)
-category = "Caution";
-else if (heatF < 103)
-category = "Extreme Caution";
-else
-category = "Danger";
+const banner =
+document.getElementById("heatLevel");
  
-document.getElementById("status")
-.innerText = category;
+banner.className = "banner";
+ 
+let level = "";
+ 
+if(heatIndex < 80){
+ 
+level = "SAFE";
+banner.classList.add("safe");
+ 
+}else if(heatIndex < 90){
+ 
+level = "CAUTION";
+banner.classList.add("caution");
+ 
+}else if(heatIndex < 103){
+ 
+level = "EXTREME CAUTION";
+banner.classList.add("extreme-caution");
+ 
+}else if(heatIndex < 125){
+ 
+level = "DANGER";
+banner.classList.add("danger");
+ 
+}else{
+ 
+level = "EXTREME DANGER";
+banner.classList.add("extreme-danger");
+}
+ 
+banner.innerText = level;
  
 document.getElementById("updated")
 .innerText =
-"Updated " +
+"Last Updated: " +
 new Date().toLocaleString();
  
 }
-catch(err) {
+catch(error){
+ 
+console.error(error);
  
 document.getElementById("heat")
 .innerText = "ERROR";
  
-console.error(err);
+document.getElementById("temp")
+.innerText = "ERROR";
 }
 }
  
 loadWeather();
  
 setInterval(loadWeather, 300000);
- 
 </script>
- 
 </body>
 </html>
