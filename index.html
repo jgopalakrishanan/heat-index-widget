@@ -144,125 +144,163 @@ return Math.round((celsius * 9 / 5) + 32);
 async function loadWeather(){
  
 try{
- 
+ 
+// Find location metadata
 const pointResponse = await fetch(
 `https://api.weather.gov/points/${LAT},${LON}`
 );
- 
-const pointData = await pointResponse.json();
- 
-const gridUrl =
-pointData.properties.forecastGridData;
- 
-const gridResponse =
-await fetch(gridUrl);
- 
-const gridData =
-await gridResponse.json();
- 
-const heatValues =
-gridData.properties.heatIndex.values;
- 
-const tempValues =
-gridData.properties.temperature.values;
- 
-const humidityValues =
-gridData.properties.relativeHumidity.values;
- 
-const heatReading =
-heatValues.find(v => v.value !== null);
- 
-const tempReading =
-tempValues.find(v => v.value !== null);
- 
-const humidityReading =
-humidityValues.find(v => v.value !== null);
- 
-if(tempReading){
- 
+ 
+const pointData =
+await pointResponse.json();
+ 
+// Find nearby weather stations
+const stationResponse =
+await fetch(
+pointData.properties.observationStations
+);
+ 
+const stationData =
+await stationResponse.json();
+ 
+// Use nearest station
+const stationUrl =
+stationData.observationStations[0];
+ 
+// Get latest observation
+const observationResponse =
+await fetch(
+`${stationUrl}/observations/latest`
+);
+ 
+const observationData =
+await observationResponse.json();
+ 
+const props =
+observationData.properties;
+ 
+// Temperature
+if(props.temperature.value !== null){
+ 
 const temperature =
-cToF(tempReading.value);
- 
-document.getElementById("temp").innerText =
-temperature + "°F";
+cToF(props.temperature.value);
+ 
+document.getElementById("temp")
+.innerText =
+`${temperature}°F`;
 }
- 
-if(humidityReading){
- 
-document.getElementById("humidity").innerText =
-Math.round(humidityReading.value) + "%";
+ 
+// Relative Humidity
+if(props.relativeHumidity.value !== null){
+ 
+document.getElementById("humidity")
+.innerText =
+`${Math.round(
+props.relativeHumidity.value
+)}%`;
 }
- 
+ 
+// "Feels Like"
 let heatIndex = null;
- 
-if(heatReading){
- 
+ 
+if(
+props.heatIndex &&
+props.heatIndex.value !== null
+){
+ 
 heatIndex =
-cToF(heatReading.value);
- 
-document.getElementById("heat").innerText =
-heatIndex + "°F";
- 
-}else{
- 
-document.getElementById("heat").innerText =
+cToF(props.heatIndex.value);
+ 
+document.getElementById("heat")
+.innerText =
+`${heatIndex}°F`;
+ 
+}
+else if(
+props.apparentTemperature &&
+props.apparentTemperature.value !== null
+){
+ 
+heatIndex =
+cToF(
+props.apparentTemperature.value
+);
+ 
+document.getElementById("heat")
+.innerText =
+`${heatIndex}°F`;
+ 
+}
+else{
+ 
+document.getElementById("heat")
+.innerText =
 "N/A";
 }
- 
+ 
 const banner =
 document.getElementById("heatLevel");
- 
-banner.className = "banner";
- 
+ 
+banner.className =
+"banner";
+ 
 if(heatIndex === null){
- 
+ 
 banner.innerText =
 "NO HEAT INDEX";
- 
+ 
 }
 else if(heatIndex < 80){
- 
-banner.innerText = "SAFE";
-banner.classList.add("safe");
- 
+ 
+banner.innerText =
+"SAFE";
+ 
+banner.classList.add(
+"safe"
+);
+ 
 }
 else if(heatIndex < 90){
- 
-banner.innerText = "CAUTION";
-banner.classList.add("caution");
- 
+ 
+banner.innerText =
+"CAUTION";
+ 
+banner.classList.add(
+"caution"
+);
+ 
 }
 else if(heatIndex < 103){
- 
+ 
 banner.innerText =
 "EXTREME CAUTION";
- 
+ 
 banner.classList.add(
 "extreme-caution"
 );
- 
+ 
 }
 else if(heatIndex < 125){
- 
+ 
 banner.innerText =
 "DANGER";
- 
+ 
 banner.classList.add(
 "danger"
 );
- 
+ 
 }
 else{
- 
+ 
 banner.innerText =
 "EXTREME DANGER";
- 
+ 
 banner.classList.add(
 "extreme-danger"
 );
 }
- 
-document.getElementById("updated").innerText =
+ 
+document.getElementById("updated")
+.innerText =
 "Updated " +
 new Date().toLocaleTimeString(
 [],
@@ -271,22 +309,23 @@ hour: "numeric",
 minute: "2-digit"
 }
 );
- 
+ 
 }
 catch(error){
- 
+ 
 console.error(error);
- 
-document.getElementById("heat").innerText =
-"ERROR";
- 
-document.getElementById("temp").innerText =
-"ERROR";
- 
-document.getElementById("humidity").innerText =
-"ERROR";
- 
-document.getElementById("heatLevel").innerText =
+ 
+document.getElementById("heat")
+.innerText = "ERROR";
+ 
+document.getElementById("temp")
+.innerText = "ERROR";
+ 
+document.getElementById("humidity")
+.innerText = "ERROR";
+ 
+document.getElementById("heatLevel")
+.innerText =
 "DATA ERROR";
 }
 }
