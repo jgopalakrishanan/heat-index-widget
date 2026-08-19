@@ -75,7 +75,7 @@ opacity:0.75;
 }
  
 .safe{
-background:#16a34a;
+background:#22c55e;
 }
  
 .caution{
@@ -103,7 +103,7 @@ background:#7e22ce;
 <div class="card">
  
 <div class="location">
-Cincinnati Division<br>
+Heat Index Dashboard<br>
 Lebanon, OH
 </div>
  
@@ -112,7 +112,7 @@ Loading...
 </div>
  
 <div>
-<div class="metric-label">Heat Index</div>
+<div class="metric-label">Feels Like</div> <!--Renamed from Heat Index to Feels Like -->
 <div id="heat" class="heat">--</div>
 </div>
  
@@ -133,43 +133,43 @@ Loading...
 </div>
  
 <script>
- 
-const LAT = 39.3933;
-const LON = -84.2285;
+//Reduce API calls by hardcoding weather station derived from weather.gov for LAT and LON
+// const LAT = 39.3933;
+// const LON = -84.2285;
+const STATION = "https://api.weather.gov/stations/KI68";
  
 function cToF(celsius){
 return Math.round((celsius * 9 / 5) + 32);
+}
+function calculateHeatIndex(tempF, humidity) {
+ 
+// Heat index isn't really used below 80°F, Added Function to compute Feels Like locally when no heat index available from API
+if (tempF < 80) {
+return tempF;
+}
+ 
+const HI =
+-42.379 +
+2.04901523 * tempF +
+10.14333127 * humidity -
+0.22475541 * tempF * humidity -
+0.00683783 * tempF * tempF -
+0.05481717 * humidity * humidity +
+0.00122874 * tempF * tempF * humidity +
+0.00085282 * tempF * humidity * humidity -
+0.00000199 * tempF * tempF * humidity * humidity;
+ 
+return Math.round(HI);
 }
  
 async function loadWeather(){
  
 try{
  
-// Find location metadata
-const pointResponse = await fetch(
-`https://api.weather.gov/points/${LAT},${LON}`
-);
- 
-const pointData =
-await pointResponse.json();
- 
-// Find nearby weather stations
-const stationResponse =
-await fetch(
-pointData.properties.observationStations
-);
- 
-const stationData =
-await stationResponse.json();
- 
-// Use nearest station
-const stationUrl =
-stationData.observationStations[0];
- 
 // Get latest observation
 const observationResponse =
 await fetch(
-`${stationUrl}/observations/latest`
+`${STATION}/observations/latest`
 );
  
 const observationData =
@@ -178,15 +178,31 @@ await observationResponse.json();
 const props =
 observationData.properties;
  
-// Temperature
+// Temperature, Added Color coding to show Temperate Trend Color
 if(props.temperature.value !== null){
  
 const temperature =
 cToF(props.temperature.value);
  
-document.getElementById("temp")
-.innerText =
+const tempElement =
+document.getElementById("temp");
+ 
+tempElement.innerText =
 `${temperature}°F`;
+ 
+// Change color based on temperature
+if (temperature >= 95) {
+tempElement.style.color = "#ef4444"; // Red
+}
+else if (temperature >= 85) {
+tempElement.style.color = "#f97316"; // Orange
+}
+else if (temperature >= 75) {
+tempElement.style.color = "#facc15"; // Yellow
+}
+else {
+tempElement.style.color = "#38bdf8"; // Blue
+}
 }
  
 // Relative Humidity
@@ -199,38 +215,43 @@ props.relativeHumidity.value
 )}%`;
 }
  
-// "Feels Like"
+// "Feels Like" Added Function to compute Feels Like locally when no heat index available from API
+// Added color coding for HeatIndex based on OSHA/NIOSH standards
 let heatIndex = null;
  
-if(
-props.heatIndex &&
-props.heatIndex.value !== null
-){
+if (
+props.temperature?.value !== null &&
+props.relativeHumidity?.value !== null
+) {
  
-heatIndex =
-cToF(props.heatIndex.value);
+const tempF =
+cToF(props.temperature.value);
  
-document.getElementById("heat")
-.innerText =
-`${heatIndex}°F`;
- 
-}
-else if(
-props.apparentTemperature &&
-props.apparentTemperature.value !== null
-){
- 
-heatIndex =
-cToF(
-props.apparentTemperature.value
+heatIndex = calculateHeatIndex(
+tempF,
+props.relativeHumidity.value
 );
  
-document.getElementById("heat")
-.innerText =
+const heatElement = document.getElementById("heat")
+heatElement.innerText =
 `${heatIndex}°F`;
- 
+if (heatIndex < 80) {
+heatElement.style.color = "#22c55e";
 }
-else{
+else if (heatIndex <= 90) {
+heatElement.style.color = "#facc15";
+}
+else if (heatIndex <= 103) {
+heatElement.style.color = "#f97316";
+}
+else if (heatIndex <= 115) {
+heatElement.style.color = "#dc2626";
+}
+else {
+heatElement.style.color = "#7e22ce";
+}
+}
+else {
  
 document.getElementById("heat")
 .innerText =
@@ -246,7 +267,7 @@ banner.className =
 if(heatIndex === null){
  
 banner.innerText =
-"NO HEAT INDEX";
+"SAFE";
  
 }
 else if(heatIndex < 80){
@@ -272,17 +293,17 @@ banner.classList.add(
 else if(heatIndex < 103){
  
 banner.innerText =
-"EXTREME CAUTION";
+"HIGH";
  
 banner.classList.add(
 "extreme-caution"
 );
  
 }
-else if(heatIndex < 125){
+else if(heatIndex < 115){
  
 banner.innerText =
-"DANGER";
+"VERY HIGH";
  
 banner.classList.add(
 "danger"
@@ -292,7 +313,7 @@ banner.classList.add(
 else{
  
 banner.innerText =
-"EXTREME DANGER";
+"EXTREME";
  
 banner.classList.add(
 "extreme-danger"
